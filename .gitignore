@@ -1,21 +1,150 @@
-# Visual Studio
-.vs/
-*.user
-*.suo
+# =====================================================================
+#  📦 InventarioMVP · .gitignore
+#  .NET 10 · Windows Forms · MySQL · Visual Studio 2026
+#  Regla de oro: lo que se genera, lo personal y los secretos NO se suben.
+# =====================================================================
 
-# Configuración local con credenciales (NO subir). Use appsettings.example.json como plantilla.
+
+# ---------------------------------------------------------------------
+# 🔐 SECRETOS Y CONFIGURACIÓN LOCAL  (¡lo más importante!)
+#    La plantilla appsettings.example.json SÍ se sube; el real, nunca.
+# ---------------------------------------------------------------------
 InventarioMVP/appsettings.json
+**/appsettings.*.json
+!**/appsettings.example.json
+*.env
+.env.*
+*.pfx
+*.p12
+*.snk
+*.pem
+*.key
+secrets.json
+*.publishsettings
 
-# Compilación
-bin/
-obj/
+
+# ---------------------------------------------------------------------
+# 🗄️ BASE DE DATOS (herramientas y copias locales)
+# ---------------------------------------------------------------------
+BaseDatos/limpiar_datos_prueba.sql
+BaseDatos/*.local.sql
+BaseDatos/*.dump.sql
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+
+
+# ---------------------------------------------------------------------
+# 🏗️ COMPILACIÓN  (se regenera con dotnet build)
+# ---------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
 [Dd]ebug/
 [Rr]elease/
-
-# NuGet
+x64/
+x86/
+ARM/
+ARM64/
+publish/
+artifacts/
+*.pdb
+*.dll.config
 *.nupkg
-packages/
+*.snupkg
+project.lock.json
+project.fragment.lock.json
 
-# Sistema
+
+# ---------------------------------------------------------------------
+# 🟣 VISUAL STUDIO
+# ---------------------------------------------------------------------
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.vspscc
+*.vssscc
+*.VC.db
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.TMP
+ipch/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.idea/
+
+
+# ---------------------------------------------------------------------
+# 🧩 NUGET
+# ---------------------------------------------------------------------
+packages/
+.nuget/
+!.nuget/NuGet.config
+
+
+# ---------------------------------------------------------------------
+# 🧪 PRUEBAS, COBERTURA Y LOGS
+# ---------------------------------------------------------------------
+TestResults/
+[Tt]est[Rr]esult*/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+*.log
+logs/
+msbuild.binlog
+*.binlog
+
+
+# ---------------------------------------------------------------------
+# 📄 EXPORTACIONES GENERADAS POR LA APLICACIÓN (reportes PDF / Excel)
+#    Los PDF del repositorio, si los hubiera, viven en docs/ y no se ignoran.
+# ---------------------------------------------------------------------
+/Reportes_exportados/
+/exportaciones/
+/Exportaciones/
+~$*.xlsx
+~$*.docx
+
+
+# ---------------------------------------------------------------------
+# 💻 EDITORES Y HERRAMIENTAS
+# ---------------------------------------------------------------------
+.vscode/
+.fleet/
+*.swp
+*.swo
+*~
+.claude/
+
+
+# ---------------------------------------------------------------------
+# 🖥️ SISTEMA OPERATIVO
+# ---------------------------------------------------------------------
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 .DS_Store
+.AppleDouble
+.LSOverride
+
+
+# ---------------------------------------------------------------------
+# 🗑️ TEMPORALES Y COPIAS
+# ---------------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*.old

@@ -1,38 +1,38 @@
 using System.Globalization;
 using InventarioMVP.Entidades;
+using InventarioMVP.Negocio.Seguridad;
 
 namespace InventarioMVP.Vistas
 {
-    /// <summary>Ventana principal: menú lateral izquierdo, hora actual y usuario autenticado en la parte inferior.</summary>
+    /// <summary>Opción del menú lateral. La lista ya viene filtrada según los permisos del usuario.</summary>
+    public record ItemMenu(string Titulo, string Icono, Func<Control> Crear);
+
+    /// <summary>Ventana principal: menú lateral dinámico, hora actual y usuario autenticado.</summary>
     public class FrmDashboard : Form
     {
         private readonly Usuario _usuario;
-        private readonly Func<UserControl> _crearInventario;
-        private readonly Func<UserControl> _crearUsuarios;
         private readonly Panel _contenido = new() { Dock = DockStyle.Fill, BackColor = Estilos.Fondo };
         private readonly Label _lblTitulo = new() { Dock = DockStyle.Left, AutoSize = false, Width = 400, TextAlign = ContentAlignment.MiddleLeft, Font = Estilos.FuenteTitulo, ForeColor = Estilos.Menu };
         private readonly Label _lblReloj = new() { Dock = DockStyle.Right, AutoSize = false, Width = 270, TextAlign = ContentAlignment.MiddleRight, Font = Estilos.Fuente, ForeColor = Estilos.Neutro };
         private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
-        private readonly List<Button> _botonesMenu = new();
+        private readonly List<(Button Boton, ItemMenu Item)> _botonesMenu = new();
 
         /// <summary>True si el usuario eligió "Cerrar sesión" (volver al login) y no cerrar la aplicación.</summary>
         public bool CerrarSesionSolicitado { get; private set; }
 
-        public FrmDashboard(Usuario usuario, Func<UserControl> crearInventario, Func<UserControl> crearUsuarios)
+        public FrmDashboard(Usuario usuario, IList<ItemMenu> items)
         {
             _usuario = usuario;
-            _crearInventario = crearInventario;
-            _crearUsuarios = crearUsuarios;
 
             Text = "Inventario MVP";
             Icon = Imagenes.Icono;
-            ClientSize = new Size(1180, 700);
-            MinimumSize = new Size(1000, 620);
+            ClientSize = new Size(1200, 680);
+            MinimumSize = new Size(1000, 600);
             StartPosition = FormStartPosition.CenterScreen;
             Font = Estilos.Fuente;
 
             // --- Menú lateral ---
-            var menu = new Panel { Dock = DockStyle.Left, Width = 220, BackColor = Estilos.Menu };
+            var menu = new Panel { Dock = DockStyle.Left, Width = 230, BackColor = Estilos.Menu };
             var marca = new Panel { Dock = DockStyle.Top, Height = 80 };
             marca.Controls.Add(new Label
             {
@@ -44,13 +44,11 @@ namespace InventarioMVP.Vistas
                 Dock = DockStyle.Left, Width = 72, SizeMode = PictureBoxSizeMode.CenterImage,
                 Image = Imagenes.Logo(48)
             });
-            var btnInicio = BotonMenu("Inicio", "layout-dashboard", () => Mostrar("Inicio", new UcInicio(_usuario)));
-            var btnInventario = BotonMenu("Inventario", "package", () => Mostrar("Inventario", _crearInventario()));
-            var btnUsuarios = BotonMenu("Usuarios", "users", () => Mostrar("Usuarios", _crearUsuarios()));
-            var btnSalir = BotonMenu("Cerrar sesión", "log-out", CerrarSesion, esNavegacion: false);
+
+            var btnSalir = BotonMenu("Cerrar sesión", "log-out", CerrarSesion);
 
             // Sesión del usuario en la parte inferior del menú
-            var sesion = new Panel { Dock = DockStyle.Bottom, Height = 80, BackColor = Color.FromArgb(15, 23, 42), Padding = new Padding(14, 10, 8, 8) };
+            var sesion = new Panel { Dock = DockStyle.Bottom, Height = 84, BackColor = Color.FromArgb(15, 23, 42), Padding = new Padding(14, 10, 8, 8) };
             sesion.Controls.Add(new Label
             {
                 Text = _usuario.NombreCompleto + Environment.NewLine + _usuario.Correo,
@@ -65,22 +63,25 @@ namespace InventarioMVP.Vistas
             // Orden inverso de apilado (Dock = Top): el último agregado queda arriba.
             menu.Controls.Add(sesion);
             menu.Controls.Add(btnSalir);
-            menu.Controls.Add(btnUsuarios);
-            menu.Controls.Add(btnInventario);
-            menu.Controls.Add(btnInicio);
+            foreach (var item in items.Reverse())
+            {
+                var boton = BotonMenu(item.Titulo, item.Icono, () => { });
+                boton.Click += (_, _) => Mostrar(item, boton);
+                _botonesMenu.Add((boton, item));
+                menu.Controls.Add(boton);
+            }
             menu.Controls.Add(marca);
 
-            // --- Barra superior con título y reloj ---
-            var superior = new Panel { Dock = DockStyle.Top, Height = 56, BackColor = Color.White, Padding = new Padding(16, 0, 16, 0) };
-            // Con Dock = Right, el último control agregado queda más pegado al borde derecho:
-            // [título ........ reloj-icono reloj-texto | perfil]
+            // --- Barra superior: título | reloj | perfil ---
+            var superior = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = Color.White, Padding = new Padding(16, 0, 16, 0) };
             var icoReloj = new PictureBox
             {
                 Dock = DockStyle.Right, Width = 30, SizeMode = PictureBoxSizeMode.CenterImage,
                 Image = Iconos.Obtener("clock", Iconos.Sutil)
             };
             var separador = new Panel { Dock = DockStyle.Right, Width = 24 };
-            var perfil = new PerfilUsuarioControl(_usuario.NombreCompleto) { Dock = DockStyle.Right };
+            var perfil = new PerfilUsuarioControl(_usuario.NombreCompleto, Roles.Nombre(_usuario.RolId)) { Dock = DockStyle.Right };
+            // Con Dock = Right, el último control agregado queda más pegado al borde derecho.
             superior.Controls.Add(_lblTitulo);
             superior.Controls.Add(icoReloj);
             superior.Controls.Add(_lblReloj);
@@ -95,15 +96,18 @@ namespace InventarioMVP.Vistas
             _timer.Tick += (_, _) => ActualizarReloj();
             _timer.Start();
 
-            Mostrar("Inicio", new UcInicio(_usuario));
-            Resaltar(btnInicio);
+            if (items.Count > 0)
+            {
+                var primero = _botonesMenu.First(b => b.Item == items[0]);
+                Mostrar(primero.Item, primero.Boton);
+            }
         }
 
-        private Button BotonMenu(string texto, string icono, Action alHacerClic, bool esNavegacion = true)
+        private Button BotonMenu(string texto, string icono, Action alHacerClic)
         {
             var b = new Button
             {
-                Text = " " + texto, Dock = DockStyle.Top, Height = 48, Tag = icono,
+                Text = " " + texto, Dock = DockStyle.Top, Height = 46, Tag = icono,
                 FlatStyle = FlatStyle.Flat, ForeColor = Color.White, BackColor = Estilos.Menu,
                 Image = Iconos.Obtener(icono, Iconos.Normal),
                 ImageAlign = ContentAlignment.MiddleLeft, TextAlign = ContentAlignment.MiddleLeft,
@@ -113,30 +117,23 @@ namespace InventarioMVP.Vistas
             };
             b.FlatAppearance.BorderSize = 0;
             b.FlatAppearance.MouseOverBackColor = Estilos.MenuHover;
-            b.Click += (_, _) =>
-            {
-                if (esNavegacion) Resaltar(b);
-                alHacerClic();
-            };
-            if (esNavegacion) _botonesMenu.Add(b);
+            b.Click += (_, _) => alHacerClic();
             return b;
         }
 
-        private void Resaltar(Button activo)
+        private void Mostrar(ItemMenu item, Button activo)
         {
-            foreach (var b in _botonesMenu)
+            foreach (var (boton, _) in _botonesMenu)
             {
-                bool esActivo = b == activo;
-                b.BackColor = esActivo ? Estilos.MenuActivo : Estilos.Menu;
-                b.Image = Iconos.Obtener((string)b.Tag!, esActivo ? Iconos.Blanco : Iconos.Normal);
+                bool esActivo = boton == activo;
+                boton.BackColor = esActivo ? Estilos.MenuActivo : Estilos.Menu;
+                boton.Image = Iconos.Obtener((string)boton.Tag!, esActivo ? Iconos.Blanco : Iconos.Normal);
             }
-        }
 
-        private void Mostrar(string titulo, Control vista)
-        {
-            _lblTitulo.Text = titulo;
+            _lblTitulo.Text = item.Titulo;
             foreach (Control c in _contenido.Controls) c.Dispose();
             _contenido.Controls.Clear();
+            var vista = item.Crear();
             vista.Dock = DockStyle.Fill;
             _contenido.Controls.Add(vista);
         }

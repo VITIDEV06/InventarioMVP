@@ -1,3 +1,4 @@
+using InventarioMVP.Entidades;
 using InventarioMVP.Negocio.Servicios;
 using InventarioMVP.Vistas;
 
@@ -6,57 +7,43 @@ namespace InventarioMVP.Presentadores
     public class InventarioPresentador
     {
         private readonly IInventarioView _vista;
-        private readonly ProductoService _productos;
+        private readonly InventarioService _inventario;
 
-        public InventarioPresentador(IInventarioView vista, ProductoService productos)
+        public InventarioPresentador(IInventarioView vista, InventarioService inventario)
         {
             _vista = vista;
-            _productos = productos;
+            _inventario = inventario;
 
-            _vista.CargarSolicitado += (_, _) => Ejecutar(Cargar);
-            _vista.BuscarSolicitado += (_, _) => Ejecutar(Buscar);
-            _vista.NuevoSolicitado += (_, _) => _vista.MostrarEnFormulario(null);
-            _vista.GuardarSolicitado += (_, _) => Ejecutar(Guardar);
-            _vista.EliminarSolicitado += (_, _) => Ejecutar(Eliminar);
-            _vista.SeleccionCambiada += (_, _) =>
+            _vista.CargarSolicitado += (_, _) => Ejecutar(() =>
             {
-                var p = _vista.ProductoSeleccionado;
-                if (p != null) _vista.MostrarEnFormulario(p);
-            };
+                _vista.ConfigurarPermisos(_inventario.PuedeMover);
+                RecargarProductos();
+                RecargarMovimientos();
+            });
+            _vista.BuscarSolicitado += (_, _) => Ejecutar(RecargarProductos);
+            _vista.MovimientosFiltrados += (_, _) => Ejecutar(RecargarMovimientos);
+            _vista.EntradaSolicitada += (_, _) => Ejecutar(() => Mover(TipoMovimiento.Entrada));
+            _vista.SalidaSolicitada += (_, _) => Ejecutar(() => Mover(TipoMovimiento.Salida));
         }
 
-        private void Cargar() => _vista.MostrarProductos(_productos.Listar());
+        private void RecargarProductos() => _vista.MostrarProductos(_inventario.Listar(_vista.TextoBusqueda));
 
-        private void Buscar() => _vista.MostrarProductos(_productos.Buscar(_vista.TextoBusqueda));
+        private void RecargarMovimientos() =>
+            _vista.MostrarMovimientos(_inventario.Movimientos(_vista.Desde, _vista.Hasta,
+                _vista.SoloSeleccionado ? _vista.ProductoSeleccionado?.Id : null));
 
-        private void Guardar()
+        private void Mover(string tipo)
         {
-            var producto = _vista.LeerFormulario();
-            bool esNuevo = producto.Id == 0;
-            _productos.Guardar(producto);
-            Buscar();
-            _vista.MostrarEnFormulario(null);
-            _vista.MostrarInfo(esNuevo ? "Producto registrado correctamente." : "Producto actualizado correctamente.");
+            var producto = _vista.ProductoSeleccionado
+                ?? throw new ValidacionException("Seleccione un producto de la tabla para registrar el movimiento.");
+            bool guardado = _vista.PedirMovimiento(producto, tipo,
+                (cantidad, motivo) => Ejecutor.Intentar(() => _inventario.RegistrarMovimiento(producto.Id, tipo, cantidad, motivo)));
+            if (!guardado) return;
+            RecargarProductos();
+            RecargarMovimientos();
+            _vista.MostrarInfo(tipo == TipoMovimiento.Entrada ? "Entrada de inventario registrada." : "Salida de inventario registrada.");
         }
 
-        private void Eliminar()
-        {
-            var seleccionado = _vista.ProductoSeleccionado;
-            if (seleccionado == null)
-                throw new ValidacionException("Seleccione un producto de la tabla para eliminarlo.");
-            if (!_vista.Confirmar($"¿Eliminar el producto \"{seleccionado.Nombre}\"? Esta acción no se puede deshacer."))
-                return;
-            _productos.Eliminar(seleccionado.Id);
-            Buscar();
-            _vista.MostrarEnFormulario(null);
-            _vista.MostrarInfo("Producto eliminado.");
-        }
-
-        private void Ejecutar(Action accion)
-        {
-            try { accion(); }
-            catch (ValidacionException ex) { _vista.MostrarError(ex.Message); }
-            catch (Exception ex) { _vista.MostrarError("Error de base de datos: " + ex.Message); }
-        }
+        private void Ejecutar(Action accion) => Ejecutor.Ejecutar(accion, _vista.MostrarError);
     }
 }

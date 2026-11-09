@@ -3,93 +3,86 @@ using InventarioMVP.Entidades;
 
 namespace InventarioMVP.Vistas
 {
-    public class UcUsuarios : UserControl, IUsuariosView
+    /// <summary>Administración de usuarios (exclusiva del administrador).</summary>
+    public class UcUsuarios : VistaBase, IUsuariosView
     {
         private readonly DataGridView _grid = new();
-        private readonly TextBox _txtUsuario = new() { Dock = DockStyle.Fill, MaxLength = 50 };
-        private readonly TextBox _txtCorreo = new() { Dock = DockStyle.Fill, MaxLength = 120 };
-        private readonly TextBox _txtNombre = new() { Dock = DockStyle.Fill, MaxLength = 100 };
-        private readonly TextBox _txtPassword = new() { Dock = DockStyle.Fill, MaxLength = 72, UseSystemPasswordChar = true };
-        private readonly TextBox _txtConfirmar = new() { Dock = DockStyle.Fill, MaxLength = 72, UseSystemPasswordChar = true };
 
         public event EventHandler? CargarSolicitado;
-        public event EventHandler? RegistrarSolicitado;
+        public event EventHandler? NuevoSolicitado;
+        public event EventHandler? EditarSolicitado;
+        public event EventHandler? EstadoSolicitado;
+        public event EventHandler? PasswordSolicitada;
 
-        public string NombreUsuario => _txtUsuario.Text;
-        public string Correo => _txtCorreo.Text;
-        public string NombreCompleto => _txtNombre.Text;
-        public string Password => _txtPassword.Text;
-        public string ConfirmarPassword => _txtConfirmar.Text;
+        public Usuario? UsuarioSeleccionado => _grid.CurrentRow?.DataBoundItem as Usuario;
 
         public UcUsuarios()
         {
-            Dock = DockStyle.Fill;
-            Font = Estilos.Fuente;
-            BackColor = Estilos.Fondo;
-            Padding = new Padding(16);
-
             Estilos.ConfigurarGrid(_grid);
             _grid.Columns.AddRange(
-                Estilos.Columna(nameof(Usuario.NombreUsuario), "Usuario", 80),
-                Estilos.Columna(nameof(Usuario.Correo), "Correo", 130),
-                Estilos.Columna(nameof(Usuario.NombreCompleto), "Nombre completo", 130),
-                Estilos.Columna(nameof(Usuario.FechaCreacion), "Creado", 90, "g"));
+                Estilos.Columna(nameof(Usuario.NombreUsuario), "Usuario", 70),
+                Estilos.Columna(nameof(Usuario.NombreCompleto), "Nombre completo", 110),
+                Estilos.Columna(nameof(Usuario.Correo), "Correo", 110),
+                Estilos.Columna(nameof(Usuario.RolTexto), "Rol", 60),
+                Estilos.Columna(nameof(Usuario.EstadoTexto), "Estado", 55),
+                Estilos.Columna(nameof(Usuario.UltimoAcceso), "Último acceso", 80, "dd/MM/yyyy HH:mm"),
+                Estilos.Columna(nameof(Usuario.FechaCreacion), "Creado", 65, "dd/MM/yyyy"));
 
-            var tabla = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, Padding = new Padding(12) };
-            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));
-            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            void Fila(string etiqueta, Control c)
+            var btnNuevo = Estilos.Boton("Nuevo usuario", Estilos.Primario, 150, "user-plus");
+            var btnEditar = Estilos.Boton("Editar", Estilos.Neutro, 100, "pencil");
+            var btnEstado = Estilos.Boton("Activar / Desactivar", Estilos.Aviso, 190, "power");
+            var btnPassword = Estilos.Boton("Contraseña", Estilos.Neutro, 130, "key-round");
+            var barra = Estilos.Barra(btnNuevo, btnEditar, btnEstado, btnPassword);
+
+            var tarjeta = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(1) };
+            tarjeta.Controls.Add(_grid);
+            Controls.Add(tarjeta);
+            Controls.Add(new Panel { Dock = DockStyle.Top, Height = 8 });
+            Controls.Add(barra);
+            Controls.Add(Encabezado("Usuarios", "Cree cuentas, asigne roles y permisos, y active o desactive usuarios"));
+
+            Load += (_, _) => Disparar(CargarSolicitado);
+            btnNuevo.Click += (_, _) => Disparar(NuevoSolicitado);
+            btnEditar.Click += (_, _) => Disparar(EditarSolicitado);
+            btnEstado.Click += (_, _) => Disparar(EstadoSolicitado);
+            btnPassword.Click += (_, _) => Disparar(PasswordSolicitada);
+            _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) Disparar(EditarSolicitado); };
+            _grid.CellFormatting += (_, e) =>
             {
-                tabla.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                tabla.Controls.Add(Estilos.Etiqueta(etiqueta));
-                c.Margin = new Padding(0, 4, 0, 4);
-                tabla.Controls.Add(c);
-            }
-            Fila("Usuario", _txtUsuario);
-            Fila("Correo", _txtCorreo);
-            Fila("Nombre", _txtNombre);
-            Fila("Contraseña", _txtPassword);
-            Fila("Confirmar", _txtConfirmar);
-
-            var btnRegistrar = Estilos.Boton("Registrar usuario", Estilos.Primario, 180, "user-plus");
-            var botones = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 50, Padding = new Padding(12, 8, 0, 0) };
-            botones.Controls.Add(btnRegistrar);
-
-            var lateral = new Panel { Dock = DockStyle.Right, Width = 340, BackColor = Color.White };
-            lateral.Controls.Add(botones);
-            lateral.Controls.Add(tabla);
-            lateral.Controls.Add(new Label
-            {
-                Text = "Nuevo usuario", Dock = DockStyle.Top, Height = 44,
-                Padding = new Padding(12, 12, 0, 0), Font = new Font("Segoe UI Semibold", 11F)
-            });
-
-            var centro = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 0, 12, 0) };
-            centro.Controls.Add(_grid);
-
-            Controls.Add(centro);
-            Controls.Add(lateral);
-
-            Load += (_, _) => CargarSolicitado?.Invoke(this, EventArgs.Empty);
-            btnRegistrar.Click += (_, _) => RegistrarSolicitado?.Invoke(this, EventArgs.Empty);
+                if (e.RowIndex < 0 || _grid.Rows[e.RowIndex].DataBoundItem is not Usuario u) return;
+                string col = _grid.Columns[e.ColumnIndex].DataPropertyName;
+                if (col == nameof(Usuario.EstadoTexto))
+                {
+                    e.CellStyle!.ForeColor = u.Activo ? Estilos.Exito : Estilos.Peligro;
+                    e.CellStyle.Font = Estilos.FuenteNegrita;
+                }
+                else if (col == nameof(Usuario.RolTexto) && u.EsAdministrador)
+                {
+                    e.CellStyle!.ForeColor = Estilos.Primario;
+                    e.CellStyle.Font = Estilos.FuenteNegrita;
+                }
+            };
         }
 
-        public void MostrarUsuarios(IList<Usuario> usuarios) =>
-            _grid.DataSource = new BindingList<Usuario>(usuarios.ToList());
-
-        public void LimpiarFormulario()
+        public void MostrarUsuarios(IList<Usuario> usuarios)
         {
-            _txtUsuario.Clear();
-            _txtCorreo.Clear();
-            _txtNombre.Clear();
-            _txtPassword.Clear();
-            _txtConfirmar.Clear();
+            int? id = UsuarioSeleccionado?.Id;
+            _grid.DataSource = new BindingList<Usuario>(usuarios.ToList());
+            if (id == null) return;
+            foreach (DataGridViewRow fila in _grid.Rows)
+                if (fila.DataBoundItem is Usuario u && u.Id == id) { fila.Selected = true; _grid.CurrentCell = fila.Cells[0]; break; }
         }
 
-        public void MostrarError(string mensaje) =>
-            MessageBox.Show(FindForm(), mensaje, "Usuarios", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        public bool EditarUsuario(Usuario? existente, IList<Permiso> delegables, IList<string> concedidos, Func<DatosUsuario, string?> guardar)
+        {
+            using var dialogo = new FrmUsuarioEditor(existente, delegables, concedidos, guardar);
+            return dialogo.ShowDialog(FindForm()) == DialogResult.OK;
+        }
 
-        public void MostrarInfo(string mensaje) =>
-            MessageBox.Show(FindForm(), mensaje, "Usuarios", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        public bool PedirNuevaPassword(Usuario usuario, Func<string, string?> guardar)
+        {
+            using var dialogo = new FrmRestablecerPassword(usuario, guardar);
+            return dialogo.ShowDialog(FindForm()) == DialogResult.OK;
+        }
     }
 }

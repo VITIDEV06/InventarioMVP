@@ -5,8 +5,13 @@ namespace InventarioMVP.Vistas
     public class FrmLogin : Form, ILoginView
     {
         private readonly TextBox _txtIdentificador = new() { Dock = DockStyle.Top, Font = Estilos.Fuente, MaxLength = 120 };
-        private readonly TextBox _txtPassword = new() { Dock = DockStyle.Top, Font = Estilos.Fuente, UseSystemPasswordChar = true, MaxLength = 72 };
-        private readonly Button _btnIngresar = Estilos.Boton("Iniciar sesión", Estilos.Primario, 320);
+        private readonly CampoPassword _txtPassword = new() { Dock = DockStyle.Top };
+        private readonly Button _btnIngresar = Estilos.Boton("Iniciar sesión", Estilos.Primario, 320, "log-in");
+        private readonly LinkLabel _lnkCrearCuenta = new()
+        {
+            Text = "¿No tiene cuenta? Crear cuenta", Dock = DockStyle.Top, Height = 34, TextAlign = ContentAlignment.MiddleCenter,
+            LinkColor = Estilos.Primario, ActiveLinkColor = Estilos.Primario, Font = Estilos.Fuente
+        };
         private readonly Label _lblError = new()
         {
             Dock = DockStyle.Top,
@@ -19,14 +24,17 @@ namespace InventarioMVP.Vistas
 
         public event EventHandler? IniciarSesionSolicitado;
 
+        /// <summary>El usuario pidió crear una cuenta (la navegación la resuelve la raíz de composición).</summary>
+        public event EventHandler? CrearCuentaSolicitada;
+
         public string Identificador => _txtIdentificador.Text;
-        public string Password => _txtPassword.Text;
+        public string Password => _txtPassword.Valor;
 
         public FrmLogin()
         {
             Text = "Inventario - Iniciar sesión";
             Icon = Imagenes.Icono;
-            ClientSize = new Size(380, 480);
+            ClientSize = new Size(380, 560);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -59,8 +67,10 @@ namespace InventarioMVP.Vistas
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
-            var contenido = new Panel { Location = new Point(30, 205), Size = new Size(320, 255) };
+            var contenido = new Panel { Location = new Point(30, 205), Size = new Size(320, 330) };
             // Los controles Dock=Top se apilan en orden inverso al de inserción.
+            contenido.Controls.Add(_lnkCrearCuenta);
+            contenido.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 });
             contenido.Controls.Add(_btnIngresar);
             _btnIngresar.Dock = DockStyle.Top;
             _btnIngresar.Height = 40;
@@ -78,13 +88,14 @@ namespace InventarioMVP.Vistas
 
             AcceptButton = _btnIngresar;
             _btnIngresar.Click += (_, _) => IniciarSesionSolicitado?.Invoke(this, EventArgs.Empty);
+            _lnkCrearCuenta.LinkClicked += (_, _) => CrearCuentaSolicitada?.Invoke(this, EventArgs.Empty);
         }
 
         public void MostrarError(string mensaje) => _lblError.Text = mensaje;
 
         public void LimpiarPassword()
         {
-            _txtPassword.Clear();
+            _txtPassword.Limpiar();
             _txtPassword.Focus();
         }
 
@@ -95,15 +106,20 @@ namespace InventarioMVP.Vistas
             if (ocupado) _lblError.Text = string.Empty;
         }
 
-        private void InitializeComponent()
-        {
-
-        }
-
         public void CompletarInicioSesion(Usuario usuario)
         {
             UsuarioAutenticado = usuario;
             DialogResult = DialogResult.OK;
+        }
+
+        /// <summary>Tras un registro exitoso: avisa y deja el usuario listo para iniciar sesión.</summary>
+        public void CuentaCreada(string nombreUsuario)
+        {
+            _txtIdentificador.Text = nombreUsuario;
+            _txtPassword.Limpiar();
+            _lblError.Text = string.Empty;
+            _txtPassword.Focus();
+            Notificador.Exito(this, "Cuenta creada correctamente. Ya puede iniciar sesión.");
         }
     }
 }

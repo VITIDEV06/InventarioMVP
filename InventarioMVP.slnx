@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="InventarioMVP.Datos/InventarioMVP.Datos.csproj" />
+  <Project Path="InventarioMVP.Entidades/InventarioMVP.Entidades.csproj" />
+  <Project Path="InventarioMVP.Negocio/InventarioMVP.Negocio.csproj" />
+  <Project Path="InventarioMVP/InventarioMVP.csproj" />
+</Solution>

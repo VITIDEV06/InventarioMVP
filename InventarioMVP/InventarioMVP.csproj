@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Diseño con medidas fijas en píxeles: Windows amplía la ventana de forma uniforme en pantallas con escala > 100% -->
+    <ApplicationHighDpiMode>DpiUnaware</ApplicationHighDpiMode>
+    <!-- Icono del ejecutable (Explorador de archivos, barra de tareas) -->
+    <ApplicationIcon>Resources\Images\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Iconos Lucide (SVG originales) incrustados en el ejecutable -->
+    <EmbeddedResource Include="Resources\Icons\*.svg" />
+    <!-- Logo de la aplicación (pantallas) e icono de las ventanas -->
+    <EmbeddedResource Include="Resources\Images\logo.png" />
+    <EmbeddedResource Include="Resources\Images\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Svg" Version="3.4.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InventarioMVP.Entidades\InventarioMVP.Entidades.csproj" />
+    <ProjectReference Include="..\InventarioMVP.Negocio\InventarioMVP.Negocio.csproj" />
+    <ProjectReference Include="..\InventarioMVP.Datos\InventarioMVP.Datos.csproj" />
+  </ItemGroup>
+
+</Project>

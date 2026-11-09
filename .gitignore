@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Configuración local con credenciales (NO subir). Use appsettings.example.json como plantilla.
+InventarioMVP/appsettings.json
+
+# Compilación
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+
+# NuGet
+*.nupkg
+packages/
+
+# Sistema
+Thumbs.db
+.DS_Store

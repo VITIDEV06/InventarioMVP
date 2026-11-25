@@ -833,8 +833,6 @@ Pulse **Cerrar sesión** en el menú y confirme: volverá a la pantalla de login
 
 ## 📸 Capturas de pantalla
 
-> Las imágenes se cargan automáticamente desde la carpeta [`docs/img/`](docs/img/). Basta con guardar cada captura con el **nombre exacto** indicado.
-
 ### 🔑 Login, registro y validaciones
 
 | Pantalla de login | Crear cuenta | Validación de credenciales |
@@ -856,10 +854,10 @@ Pulse **Cerrar sesión** en el menú y confirme: volverá a la pantalla de login
 | ![Inventario](docs/img/inventario.png) | ![Productos](docs/img/productos.png) |
 | `inventario.png` | `productos.png` |
 
-| Editar producto (modal) | Validaciones |
-|:---:|:---:|
-| ![Editor de producto](docs/img/producto-editor.png) | ![Validaciones](docs/img/producto-validaciones.png) |
-| `producto-editor.png` | `producto-validaciones.png` |
+| Editar producto (modal) |
+|:---:|
+| ![Editor de producto](docs/img/producto-editor.png) |
+| `producto-editor.png` |
 
 ### 🛒 Ventas y 🧑‍🤝‍🧑 Clientes
 
@@ -885,18 +883,6 @@ Pulse **Cerrar sesión** en el menú y confirme: volverá a la pantalla de login
 | ![Reportes](docs/img/reportes.png) | ![Configuración](docs/img/configuracion.png) |
 | `reportes.png` | `configuracion.png` |
 
-### 🐬 Base de datos
-
-| Tablas en MySQL Workbench | Hash BCrypt almacenado | Privilegios mínimos (`SHOW GRANTS`) |
-|:---:|:---:|:---:|
-| ![Tablas](docs/img/mysql-tablas.png) | ![Hash](docs/img/mysql-hash.png) | ![Privilegios](docs/img/mysql-privilegios.png) |
-| `mysql-tablas.png` | `mysql-hash.png` | `mysql-privilegios.png` |
-
-### 🗂️ Estructura de la solución
-
-![Estructura](docs/img/estructura-solucion.png)
-
-<sub>`estructura-solucion.png` (Explorador de soluciones de Visual Studio)</sub>
 
 ---
 
